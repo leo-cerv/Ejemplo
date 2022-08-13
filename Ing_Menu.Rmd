@@ -43,8 +43,8 @@ Column {data-width=650}
 ############################
 
 # El siguiente proyecto tiene como objetivo automatizar la Ingeneria de Menú
-# y los princiíos de Omnes-Smith a través de una aplicación web para ser usada
-# por dueños, gerentes u estudiantes de la industria gastronómica.
+# y los principios de Omnes-Smith a través de una aplicación web para ser usada
+# por dueños, gerentes y estudiantes de la industria gastronómica.
 
 
 
