@@ -22,7 +22,7 @@ library(readxl)
 
 ```{r , include=FALSE}
 
-infla <- read_excel("C:/Users/leona/Desktop/R/02- proyectos/Inflacion/infla.xlsx", 
+infla <- read_excel("C:/Mi_Directorio/inflación_CL_Banco_Mundial.xlsx", 
                     sheet = "Hoja1")
 
 
