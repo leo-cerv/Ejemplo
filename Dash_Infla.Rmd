@@ -1,0 +1,229 @@
+---
+title: "Calculadora de valor real"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(shiny)
+library(tidyverse)
+library(plotly)
+library(ggthemes)
+library(DT)
+library(scales)
+library(RColorBrewer)
+library(readxl)
+```
+
+
+```{r , include=FALSE}
+
+infla <- read_excel("C:/Users/leona/Desktop/R/02- proyectos/Inflacion/infla.xlsx", 
+                    sheet = "Hoja1")
+
+
+# calculo de nuevas variables
+infla <- infla %>% 
+        mutate(Decimal = Inflacion /100,
+                Coeficiente = Decimal  + 1)
+
+
+```
+
+
+
+
+Calculadora
+==================================================
+
+
+Column {data-width=200 .sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+
+helpText("Esta aplicación calcula el valor actual del dinero para cualquier rango de años 
+         entre 1989 - 2021 \n
+         \n
+         Para utilizarla, seleciona los valores para las siguientes dos opciones")
+
+sliderInput("start_slider", 
+            label = "Selecciona el rango de años",
+            min = 1989, 
+            max = 2021, 
+            value = c(1989, 2021), 
+            step = 1, 
+            dragRange = TRUE)
+
+
+numericInput("obs", "ingresa el monto en dinero a calcular:", 1000)
+
+
+infla_react <- reactive({
+  infla %>%
+    filter(Año >= input$start_slider[1] &
+             Año <= input$start_slider[2])
+
+})
+
+
+
+```
+
+
+Column {data-width=750}
+-----------------------------------------------------------------------
+
+### 
+
+```{r}
+
+renderPlot({
+infla_react() %>% 
+  ggplot()+
+  aes(Año, Decimal, group = 1)+
+  geom_line(lwd = 1)+
+  geom_point(color = "darkgreen", size = 3)+
+  theme_economist()+
+  geom_label(
+    label = percent(round(infla_react() %>% .$Decimal, 3)), 
+    nudge_x = 0, 
+    nudge_y = 0.01, 
+    check_overlap = F,
+    size = 4
+  )+
+  labs(title = "Inflación en Chile como porcentaje anual",
+       caption = "Fuente de datos: Banco Mundial")+
+  xlab(NULL)+
+  ylab(NULL)+
+  scale_y_continuous(labels = scales::percent)+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        plot.title = element_text(color = "darkgreen", size = 24, face = "bold.italic"),
+        plot.caption = element_text(color = "darkgray", hjust = 1))
+})
+
+
+
+```
+
+
+
+Column {data-width=250}
+-----------------------------------------------------------------------
+
+### Inflación acumulada en % 
+
+```{r}
+
+
+ renderValueBox({
+  valueBox(round((infla_react() %>% 
+    select(Coeficiente) %>% 
+    cumprod() %>% 
+    tail(1) - 1) * 100, 2
+    ), 
+           icon = 'fa-line-chart'
+    )
+})
+
+
+
+
+```
+
+
+
+### Valor presente en pesos $CLP
+
+```{r}
+
+
+ renderValueBox({
+  valueBox(round(infla_react() %>% 
+    select(Coeficiente) %>% 
+    cumprod() %>% 
+    tail(1) * input$obs, 0),
+                     
+           icon = 'fa-money')
+})
+
+
+
+
+```
+
+
+
+
+
+Forecasting
+==================================================
+
+
+Column {data-width=500 .tabset}
+-----------------------------------------------------------------------
+
+```{r , include=FALSE}
+
+library(xts)
+library(forecast)
+
+infla_ts <- ts(infla$Inflacion, start = 1989, end = 2021)
+
+fitaus <- ets(infla_ts)
+
+
+```
+
+
+### Gráfico
+
+```{r}
+
+autoplot(forecast(fitaus))+
+  xlab(NULL)+
+  ylab("Inflación")+
+  labs(title = "Forecast")
+
+```
+
+
+
+### Tabla
+
+```{r}
+
+tabla <-  forecast(fitaus, h = 10)
+
+tabla <- as_tibble(tabla)
+
+tabla <- tabla %>% 
+  mutate(Año = 2022:2031) 
+  
+
+tabla %>% datatable(rownames = F, extensions = "Buttons",
+          options = list(pageLength = 100,
+                         dom = "Bfrtip",
+                         buttons = c("copy", "csv" )))
+
+```
+
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+
+###
+
+```{r}
+
+checkresiduals(fitaus)
+
+```
+
+
+
